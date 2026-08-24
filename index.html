@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Priyal, please don't close this tab 🥺</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: linear-gradient(160deg, #fff0f3 0%, #ffe0e9 45%, #ffd6e0 100%);
+    color: #5a2a3a;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .screen {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .screen.active { display: flex; }
+  /* center content when it fits, allow full scrolling when it doesn't
+     (justify-content:center would clip the top on small phones) */
+  #screen-title h1, #screen-apology h2, #screen-forgive h1, #screen-certificate h2 { margin-top: auto; }
+  #screen-title .btn, #screen-apology .btn, #screen-forgive #noCounter,
+  #screen-certificate p:last-of-type { margin-bottom: auto; }
+
+  h1 { font-size: clamp(1.5rem, 5.5vw, 2.6rem); line-height: 1.3; margin-bottom: 14px; }
+  h2 { font-size: clamp(1.2rem, 4.5vw, 2rem); margin-bottom: 12px; }
+  p  { font-size: clamp(1rem, 3.5vw, 1.15rem); line-height: 1.55; }
+
+  .btn {
+    font-family: inherit;
+    font-size: clamp(1.05rem, 4vw, 1.3rem);
+    padding: 14px 34px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ff6b95, #e0447a);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(224, 68, 122, .35);
+    transition: transform .15s ease;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: scale(.95); }
+
+  /* ---------- floating background books ---------- */
+  .floaty {
+    position: fixed;
+    font-size: 28px;
+    opacity: .5;
+    animation: floatUp linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes floatUp {
+    from { transform: translateY(105vh) rotate(-10deg); }
+    to   { transform: translateY(-15vh) rotate(12deg); }
+  }
+  .screen > * { position: relative; z-index: 1; }
+
+  /* ---------- title screen ---------- */
+  #screen-title .subtitle { margin: 8px 0 26px; font-style: italic; opacity: .85; }
+  .wobble { display: inline-block; animation: wobble 2.2s ease-in-out infinite; }
+  @keyframes wobble { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+  /* ---------- game screen ---------- */
+  #screen-game { padding: 0; justify-content: flex-start; overflow: hidden; }
+  #hud {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: clamp(.95rem, 3.5vw, 1.1rem);
+    background: rgba(255, 255, 255, .55);
+    backdrop-filter: blur(4px);
+    z-index: 2;
+  }
+  #gameWrap { position: relative; flex: 1; width: 100%; }
+  #gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #toast {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    max-width: 92%;
+    background: #fff;
+    border: 2px solid #ff9db8;
+    border-radius: 14px;
+    padding: 10px 16px;
+    font-size: clamp(.9rem, 3.4vw, 1.05rem);
+    box-shadow: 0 6px 16px rgba(224, 68, 122, .25);
+    opacity: 0;
+    transition: opacity .25s ease;
+    pointer-events: none;
+    z-index: 3;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ---------- apology screen ---------- */
+  #letter {
+    max-width: 560px;
+    background: #fffaf5;
+    border: 1px solid #f3cdd9;
+    border-radius: 16px;
+    padding: 26px 22px;
+    box-shadow: 0 10px 30px rgba(160, 60, 100, .15);
+    text-align: left;
+    margin-bottom: 22px;
+  }
+  #letter p { margin-bottom: 10px; opacity: 0; transform: translateY(8px); transition: all .5s ease; }
+  #letter p.visible { opacity: 1; transform: none; }
+  #btnQuestion { opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+  #btnQuestion.ready { opacity: 1; pointer-events: auto; }
+
+  /* ---------- forgive screen ---------- */
+  #btnYes {
+    background: linear-gradient(135deg, #2fbf71, #1a9e58);
+    box-shadow: 0 6px 18px rgba(26, 158, 88, .4);
+    transition: all .25s ease;
+  }
+  #btnNo {
+    background: linear-gradient(135deg, #9aa0a6, #6f7378);
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    transition: font-size .2s ease, padding .2s ease;
+  }
+  #forgiveButtons { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-top: 28px; }
+  #noCounter { margin-top: 22px; font-style: italic; min-height: 1.6em; opacity: .8; }
+
+  /* ---------- certificate screen ---------- */
+  #certificate {
+    max-width: 560px;
+    background: #fffdf7;
+    border: 3px double #d4a017;
+    border-radius: 10px;
+    padding: 26px 22px;
+    box-shadow: 0 10px 30px rgba(160, 60, 100, .2);
+    margin-bottom: 22px;
+  }
+  #certificate .certTitle {
+    font-size: clamp(1.05rem, 4vw, 1.4rem);
+    letter-spacing: .06em;
+    color: #a3720a;
+    margin-bottom: 6px;
+  }
+  #certificate .certName {
+    font-size: clamp(1.5rem, 6vw, 2.2rem);
+    margin: 10px 0;
+    color: #c2185b;
+  }
+  #certificate .clause { font-size: clamp(.85rem, 3.2vw, .98rem); margin: 8px 0; font-style: italic; }
+  #certificate .signature { margin-top: 14px; font-size: 1.1rem; }
+
+  #instaCard {
+    width: min(320px, 88vw);
+    background: #fff;
+    border: 1px solid #e3c6d0;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 20px rgba(160, 60, 100, .15);
+    margin-bottom: 18px;
+  }
+  #instaCard .avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  #instaCard .meta { flex: 1; text-align: left; font-family: Arial, Helvetica, sans-serif; }
+  #instaCard .meta .handle { font-weight: bold; font-size: .95rem; }
+  #instaCard .meta .sub { font-size: .8rem; color: #8e8e8e; }
+  #followBtn {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: .85rem;
+    font-weight: bold;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #efefef;
+    color: #262626;
+    cursor: pointer;
+  }
+  #followBtn.pleading {
+    background: #0095f6;
+    color: #fff;
+    animation: plead .9s ease-in-out infinite;
+  }
+  @keyframes plead { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+  #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+</style>
+</head>
+<body>
+
+<canvas id="confettiCanvas"></canvas>
+
+<!-- ============ 1. TITLE ============ -->
+<div class="screen active" id="screen-title">
+  <h1><span class="wobble">🥺</span><br>Priyal, you unfollowed me on Instagram...<br>but please don't unfollow this tab.</h1>
+  <p class="subtitle">A Very Serious Apology™ (in game form, because a text felt too easy)</p>
+  <p style="margin-bottom:26px;">Catch <b>10 falling books</b> to unlock my apology.<br>Drag with your finger (or use arrow keys / mouse). 📚</p>
+  <button class="btn" id="btnStart">Fine, I'll play 🙄</button>
+</div>
+
+<!-- ============ 2. GAME ============ -->
+<div class="screen" id="screen-game">
+  <div id="hud">
+    <span id="progress">📚 0 / 10</span>
+    <span>catch the books, not feelings 💘</span>
+  </div>
+  <div id="gameWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div id="toast"></div>
+  </div>
+</div>
+
+<!-- ============ 3. APOLOGY ============ -->
+<div class="screen" id="screen-apology">
+  <h2>📜 The Apology You Unlocked</h2>
+  <div id="letter"></div>
+  <button class="btn" id="btnQuestion">I have one very important question… 👉</button>
+</div>
+
+<!-- ============ 4. FORGIVE ============ -->
+<div class="screen" id="screen-forgive">
+  <h1>So, Priyal…<br>do you forgive me? 🥺👉👈</h1>
+  <div id="forgiveButtons">
+    <button class="btn" id="btnYes">YES 💖</button>
+    <button class="btn" id="btnNo">No</button>
+  </div>
+  <p id="noCounter"></p>
+</div>
+
+<!-- ============ 5. CERTIFICATE ============ -->
+<div class="screen" id="screen-certificate">
+  <h2>🎉 FORGIVENESS ACCEPTED 🎉</h2>
+  <div id="certificate">
+    <div class="certTitle">✦ OFFICIAL CERTIFICATE ✦</div>
+    <div>Lifetime Unlimited Book-Rant Listening License</div>
+    <div class="certName">issued to: Priyal 👑</div>
+    <p class="clause">Clause 1: The undersigned shall never again utter the words <b>"we'll talk about it later"</b> while a book is being discussed. Violations are punishable by mandatory reading of the holder's entire TBR list aloud.</p>
+    <p class="clause">Clause 2: The holder is entitled to unlimited, uninterrupted rants about every plot twist, love triangle, and enemies-to-lovers arc. The undersigned will be ALL ears. Forever.</p>
+    <p class="clause">Clause 3: Upon acceptance, holder may (no pressure, but 🥺) consider re-following the undersigned on Instagram.</p>
+    <div class="signature">Signed, your very sorry best friend ❤️</div>
+  </div>
+  <div id="instaCard">
+    <div class="avatar">😔</div>
+    <div class="meta">
+      <div class="handle">your_favorite_idiot</div>
+      <div class="sub">misses your book rants · 1 mutual (it's you)</div>
+    </div>
+    <button id="followBtn">Unfollowed 💔</button>
+  </div>
+  <p style="max-width:480px;">P.S. Now unpause that book story from the phone call.<br>I'm listening this time. Every. Single. Word. 📖💕</p>
+</div>
+
+<script>
+'use strict';
+
+/* ================= CONFIG — edit all the personal wording here ================= */
+const CONFIG = {
+  name: 'Priyal',
+  booksToWin: 10,
+  bookTitles: [
+    '"Pride and Prejudice and Unanswered Phone Calls"',
+    '"It Ends With Us (But Our Friendship Doesn\'t)"',
+    '"Love in the Time of Being Ignored"',
+    '"To All the Books I Interrupted Before"',
+    '"The Notebook (That I Should Have Listened About)"',
+    '"Fifty Shades of Sorry"',
+    '"The Fault in Our Phone Call"',
+    '"Me Before ‘We\'ll Talk Later’"',
+    '"How to Lose a Best Friend in 10 Seconds"',
+    '"Beach Read 2: The Groveling Sequel"'
+  ],
+  missLines: [
+    'even this book knows how being ignored feels 😭',
+    'this book just left me on read… like someone I know 👀',
+    'ouch. that was a signed first edition of my dignity.',
+    'the book said it\'ll "fall for you later" — see? not funny!'
+  ],
+  phoneLines: [
+    '📱 Notification: Priyal unfollowed you 💔',
+    '📱 seen 2:47 AM. no reply. 🧊',
+    '📱 your streak with Priyal has ended 😭'
+  ],
+  apologyLines: [
+    'Dear Priyal, CEO of Romance Novels, Supreme Keeper of Plot Twists,',
+    'I did a terrible, terrible thing.',
+    'You were telling me about your books — your favorite thing in the entire universe —',
+    'and I said the worst four words in human history:',
+    '"we\'ll talk about it later." 🤦',
+    'There is no later. There is only NOW when it comes to book talk. I understand that… now.',
+    'You unfollowed me on Instagram. Honestly? Fair. I would have unfollowed me too.',
+    'And you\'ve been ignoring me since — wow, being ignored really does hurt. Lesson received, professor. Full marks to you.',
+    'So here is my official offer: unlimited, uninterrupted book rants. Every plot twist. Every love triangle. Every enemies-to-lovers arc. I am ALL ears.',
+    'I\'m so, so sorry. Truly. Now press the button, I have one very important question… 🥺'
+  ],
+  noLabels: ['No', 'no…?', 'still unfollowed 😤', 'hmm…', 'maybe', 'ugh, FINE'],
+  bookEmojis: ['📕', '📗', '📘', '📙', '📖', '💌']
+};
+
+/* ================= helpers ================= */
+const $ = (id) => document.getElementById(id);
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+/* floating background books on title screen */
+(function makeFloaties() {
+  const emojis = ['📚', '💗', '📖', '💌', '📕', '✨'];
+  const title = $('screen-title');
+  for (let i = 0; i < 12; i++) {
+    const el = document.createElement('span');
+    el.className = 'floaty';
+    el.textContent = emojis[i % emojis.length];
+    el.style.left = (5 + Math.random() * 90) + 'vw';
+    el.style.animationDuration = (9 + Math.random() * 10) + 's';
+    el.style.animationDelay = (-Math.random() * 12) + 's';
+    title.appendChild(el);
+  }
+})();
+
+/* ================= game ================= */
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+let basket = { x: 0 };
+let items = [];
+let caught = 0;
+let missStreak = 0;
+let speedScale = 1;
+let running = false;
+let lastSpawn = 0;
+let toastTimer = null;
+let titleIdx = 0, missIdx = 0, phoneIdx = 0;
+
+const BASKET_SIZE = 56;
+const ITEM_SIZE = 40;
+
+function resizeCanvas() {
+  const wrap = $('gameWrap');
+  const dpr = window.devicePixelRatio || 1;
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  basket.x = Math.min(Math.max(basket.x, BASKET_SIZE / 2), W - BASKET_SIZE / 2) || W / 2;
+}
+window.addEventListener('resize', () => { if (running) resizeCanvas(); });
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1700);
+}
+
+function spawnItem(now) {
+  const isPhone = Math.random() < 0.18;
+  items.push({
+    x: ITEM_SIZE + Math.random() * (W - ITEM_SIZE * 2),
+    y: -ITEM_SIZE,
+    vy: (H / 4.2) * speedScale * (0.85 + Math.random() * 0.3), // px per second
+    type: isPhone ? 'phone' : 'book',
+    emoji: isPhone ? '📱' : CONFIG.bookEmojis[Math.floor(Math.random() * CONFIG.bookEmojis.length)],
+    wob: Math.random() * Math.PI * 2
+  });
+  lastSpawn = now;
+}
+
+function onCatch(item) {
+  if (item.type === 'phone') {
+    toast(CONFIG.phoneLines[phoneIdx++ % CONFIG.phoneLines.length]);
+    return;
+  }
+  caught++;
+  missStreak = 0;
+  $('progress').textContent = '📚 ' + caught + ' / ' + CONFIG.booksToWin;
+  toast('Caught ' + CONFIG.bookTitles[titleIdx++ % CONFIG.bookTitles.length] + ' 💘');
+  if (caught >= CONFIG.booksToWin) {
+    running = false;
+    setTimeout(showApology, 900);
+  }
+}
+
+function onMiss(item) {
+  if (item.type === 'phone') return; // dropping the phone is canon, honestly
+  missStreak++;
+  toast(CONFIG.missLines[missIdx++ % CONFIG.missLines.length]);
+  if (missStreak >= 3) { speedScale = Math.max(0.55, speedScale - 0.15); missStreak = 0; } // mercy mode: no fail state
+}
+
+let prevTime = 0;
+function loop(now) {
+  if (!running) return;
+  if (!prevTime) prevTime = now;
+  const dt = Math.min((now - prevTime) / 1000, 0.05);
+  prevTime = now;
+
+  if (now - lastSpawn > 1150 / speedScale) spawnItem(now);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // basket
+  const basketY = H - BASKET_SIZE * 0.9;
+  ctx.font = BASKET_SIZE + 'px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🧺', basket.x, basketY);
+
+  // items
+  ctx.font = ITEM_SIZE + 'px serif';
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    it.y += it.vy * dt;
+    it.wob += dt * 3;
+    const wx = it.x + Math.sin(it.wob) * 6;
+    ctx.fillText(it.emoji, wx, it.y);
+
+    const caughtIt = Math.abs(wx - basket.x) < BASKET_SIZE * 0.75 &&
+                     it.y > basketY - BASKET_SIZE * 0.55 && it.y < basketY + BASKET_SIZE * 0.4;
+    if (caughtIt) {
+      items.splice(i, 1);
+      onCatch(it);
+    } else if (it.y > H + ITEM_SIZE) {
+      items.splice(i, 1);
+      onMiss(it);
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+/* input: pointer drag + arrow keys */
+function moveBasketTo(clientX) {
+  const rect = canvas.getBoundingClientRect();
+  basket.x = Math.min(Math.max(clientX - rect.left, BASKET_SIZE / 2), W - BASKET_SIZE / 2);
+}
+canvas.addEventListener('pointermove', (e) => moveBasketTo(e.clientX));
+canvas.addEventListener('pointerdown', (e) => moveBasketTo(e.clientX));
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  moveBasketTo(e.touches[0].clientX);
+}, { passive: false });
+
+let keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
+});
+window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+setInterval(() => {
+  if (!running) return;
+  if (keys['ArrowLeft'])  basket.x = Math.max(BASKET_SIZE / 2, basket.x - 14);
+  if (keys['ArrowRight']) basket.x = Math.min(W - BASKET_SIZE / 2, basket.x + 14);
+}, 16);
+
+$('btnStart').addEventListener('click', () => {
+  showScreen('screen-game');
+  // wait a frame so the wrap has its real size before measuring
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    basket.x = W / 2;
+    items = [];
+    caught = 0;
+    prevTime = 0;
+    lastSpawn = 0;
+    running = true;
+    requestAnimationFrame(loop);
+  });
+});
+
+/* ================= apology screen ================= */
+function showApology() {
+  showScreen('screen-apology');
+  const letter = $('letter');
+  letter.innerHTML = '';
+  CONFIG.apologyLines.forEach((line) => {
+    const p = document.createElement('p');
+    p.textContent = line;
+    letter.appendChild(p);
+  });
+  const ps = letter.querySelectorAll('p');
+  ps.forEach((p, i) => setTimeout(() => p.classList.add('visible'), 400 + i * 850));
+  setTimeout(() => $('btnQuestion').classList.add('ready'), 400 + ps.length * 850);
+}
+$('btnQuestion').addEventListener('click', () => showScreen('screen-forgive'));
+
+/* ================= forgive screen: the fleeing NO ================= */
+const btnNo = $('btnNo');
+const btnYes = $('btnYes');
+let dodges = 0;
+let yesScale = 1;
+let lastDodgeAt = 0;
+
+function dodge() {
+  const now = Date.now();
+  if (now - lastDodgeAt < 350) return; // one tap = one dodge (touch fires pointerenter + pointerdown)
+  lastDodgeAt = now;
+  dodges++;
+  $('noCounter').textContent = [
+    'nice try 😌',
+    'the button is faster than your excuses',
+    'it read the apology, it\'s wavering…',
+    'even the button forgives me',
+    'resistance level: crumbling 📉',
+    'ok it gives up'
+  ][Math.min(dodges - 1, 5)];
+
+  // YES grows every dodge
+  yesScale = Math.min(yesScale + 0.22, 2.4);
+  btnYes.style.transform = 'scale(' + yesScale + ')';
+
+  if (dodges >= CONFIG.noLabels.length) {
+    // NO surrenders and becomes a second YES
+    btnNo.textContent = 'YES 💖 (traitor button)';
+    btnNo.style.position = '';
+    btnNo.style.left = '';
+    btnNo.style.top = '';
+    btnNo.style.fontSize = '';
+    btnNo.style.padding = '';
+    btnNo.style.background = 'linear-gradient(135deg, #2fbf71, #1a9e58)';
+    btnNo.onpointerenter = null;
+    btnNo.onpointerdown = null;
+    // delay so the tap that caused the surrender can't instantly count as the YES click
+    setTimeout(() => { btnNo.onclick = acceptForgiveness; }, 400);
+    return;
+  }
+
+  btnNo.textContent = CONFIG.noLabels[dodges];
+  // shrink a bit each dodge
+  const f = Math.max(0.55, 1 - dodges * 0.09);
+  btnNo.style.fontSize = (1.1 * f) + 'rem';
+  btnNo.style.padding = (14 * f) + 'px ' + (34 * f) + 'px';
+  // flee to a random on-screen spot
+  btnNo.style.position = 'fixed';
+  const bw = btnNo.offsetWidth, bh = btnNo.offsetHeight;
+  const pad = 12;
+  btnNo.style.left = (pad + Math.random() * Math.max(1, window.innerWidth - bw - pad * 2)) + 'px';
+  btnNo.style.top  = (pad + Math.random() * Math.max(1, window.innerHeight - bh - pad * 2)) + 'px';
+}
+
+// dodge before a click can land: pointerdown fires first on touch, pointerenter on mouse hover
+btnNo.onpointerenter = dodge;
+btnNo.onpointerdown = (e) => { e.preventDefault(); dodge(); };
+btnNo.addEventListener('click', (e) => { e.preventDefault(); if (dodges < CONFIG.noLabels.length) dodge(); });
+
+btnYes.addEventListener('click', acceptForgiveness);
+
+/* ================= certificate + confetti ================= */
+function acceptForgiveness() {
+  showScreen('screen-certificate');
+  startConfetti();
+}
+
+const followBtn = $('followBtn');
+followBtn.addEventListener('click', () => {
+  if (followBtn.classList.contains('pleading')) {
+    followBtn.textContent = 'Requested 🥹 (your move)';
+    followBtn.classList.remove('pleading');
+    followBtn.style.background = '#efefef';
+    followBtn.style.color = '#262626';
+  } else {
+    followBtn.textContent = 'Follow back? 🥺';
+    followBtn.classList.add('pleading');
+  }
+});
+
+const cCanvas = $('confettiCanvas');
+const cCtx = cCanvas.getContext('2d');
+let confetti = [];
+let confettiRunning = false;
+
+function startConfetti() {
+  cCanvas.width = window.innerWidth;
+  cCanvas.height = window.innerHeight;
+  const colors = ['#ff6b95', '#ffd166', '#2fbf71', '#4f5bd5', '#fa7e1e', '#c2185b'];
+  confetti = [];
+  for (let i = 0; i < 160; i++) {
+    confetti.push({
+      x: Math.random() * cCanvas.width,
+      y: -20 - Math.random() * cCanvas.height * 0.5,
+      w: 6 + Math.random() * 8,
+      h: 8 + Math.random() * 10,
+      vy: 90 + Math.random() * 160,
+      vx: -40 + Math.random() * 80,
+      rot: Math.random() * Math.PI * 2,
+      vr: -4 + Math.random() * 8,
+      color: colors[i % colors.length]
+    });
+  }
+  if (!confettiRunning) {
+    confettiRunning = true;
+    let last = 0;
+    const step = (now) => {
+      if (!last) last = now;
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+      let alive = false;
+      for (const p of confetti) {
+        p.y += p.vy * dt;
+        p.x += p.vx * dt + Math.sin(p.y / 30) * 0.6;
+        p.rot += p.vr * dt;
+        if (p.y < cCanvas.height + 30) alive = true;
+        cCtx.save();
+        cCtx.translate(p.x, p.y);
+        cCtx.rotate(p.rot);
+        cCtx.fillStyle = p.color;
+        cCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        cCtx.restore();
+      }
+      if (alive) {
+        requestAnimationFrame(step);
+      } else {
+        confettiRunning = false;
+        cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+      }
+    };
+    requestAnimationFrame(step);
+  }
+}
+</script>
+</body>
+</html>
