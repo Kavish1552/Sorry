@@ -117,6 +117,14 @@
   }
   #letter p { margin-bottom: 10px; opacity: 0; transform: translateY(8px); transition: all .5s ease; }
   #letter p.visible { opacity: 1; transform: none; }
+  #letter p.salutation { font-weight: bold; color: #a3164f; }
+  #letter p.oath {
+    background: #fff0f5;
+    border-left: 3px solid #ff9db8;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-style: italic;
+  }
   #btnQuestion { opacity: 0; pointer-events: none; transition: opacity .6s ease; }
   #btnQuestion.ready { opacity: 1; pointer-events: auto; }
 
@@ -155,8 +163,16 @@
     margin: 10px 0;
     color: #c2185b;
   }
+  #certificate .certTitles {
+    font-size: clamp(.78rem, 3vw, .9rem);
+    font-style: italic;
+    color: #a3720a;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
   #certificate .clause { font-size: clamp(.85rem, 3.2vw, .98rem); margin: 8px 0; font-style: italic; }
   #certificate .signature { margin-top: 14px; font-size: 1.1rem; }
+  #certificate .signature .hand { font-size: .82rem; font-style: italic; opacity: .8; }
 
   #instaCard {
     width: min(320px, 88vw);
@@ -208,7 +224,7 @@
 <!-- ============ 1. TITLE ============ -->
 <div class="screen active" id="screen-title">
   <h1><span class="wobble">🥺</span><br>Priyal, you unfollowed me on Instagram...<br>but please don't unfollow this tab.</h1>
-  <p class="subtitle">A Very Serious Apology™ (in game form, because a text felt too easy)</p>
+  <p class="subtitle">A Very Serious Apology™ — in game form, because a text felt too easy<br>(and because you deserve a better ending than Season 8)</p>
   <p style="margin-bottom:26px;">Catch <b>10 falling books</b> to unlock my apology.<br>Drag with your finger (or use arrow keys / mouse). 📚</p>
   <button class="btn" id="btnStart">Fine, I'll play 🙄</button>
 </div>
@@ -249,10 +265,12 @@
     <div class="certTitle">✦ OFFICIAL CERTIFICATE ✦</div>
     <div>Lifetime Unlimited Book-Rant Listening License</div>
     <div class="certName">issued to: Priyal 👑</div>
-    <p class="clause">Clause 1: The undersigned shall never again utter the words <b>"we'll talk about it later"</b> while a book is being discussed. Violations are punishable by mandatory reading of the holder's entire TBR list aloud.</p>
+    <div class="certTitles">First of Her Name, Khaleesi of the Great Bookshelf,<br>Mother of Plot Twists, Breaker of Reading Slumps</div>
+    <p class="clause">Clause 1: The undersigned shall never again utter the words <b>"we'll talk about it later"</b> while a book is being discussed. Violations shall be settled by trial by combat, which the undersigned hereby forfeits in advance.</p>
     <p class="clause">Clause 2: The holder is entitled to unlimited, uninterrupted rants about every plot twist, love triangle, and enemies-to-lovers arc. The undersigned will be ALL ears. Forever.</p>
-    <p class="clause">Clause 3: Upon acceptance, holder may (no pressure, but 🥺) consider re-following the undersigned on Instagram.</p>
-    <div class="signature">Signed, your very sorry best friend ❤️</div>
+    <p class="clause">Clause 3: The undersigned joins the Book Watch for life. Night gathers, and now his watch begins. He shall hold the door open for every rant, however long. Hodor. 🚪</p>
+    <p class="clause">Clause 4: Upon acceptance, holder may (no pressure, but 🥺) consider re-following the undersigned on Instagram.</p>
+    <div class="signature">Signed, your very sorry best friend ❤️<br><span class="hand">— sworn before the Old Gods and the New, Hand of the Queen 🍷</span></div>
   </div>
   <div id="instaCard">
     <div class="avatar">😔</div>
@@ -282,7 +300,10 @@ const CONFIG = {
     '"The Fault in Our Phone Call"',
     '"Me Before ‘We\'ll Talk Later’"',
     '"How to Lose a Best Friend in 10 Seconds"',
-    '"Beach Read 2: The Groveling Sequel"'
+    '"Beach Read 2: The Groveling Sequel"',
+    '"A Song of Ice and Sorry"',
+    '"A Game of Phones"',
+    '"The Winds of Winter (still not out — unlike this apology)"'
   ],
   missLines: [
     'even this book knows how being ignored feels 😭',
@@ -293,21 +314,27 @@ const CONFIG = {
   phoneLines: [
     '📱 Notification: Priyal unfollowed you 💔',
     '📱 seen 2:47 AM. no reply. 🧊',
-    '📱 your streak with Priyal has ended 😭'
+    '📱 your streak with Priyal has ended 😭',
+    '📱 Priyal has taken the black. Your follow is gone. ⚔️'
   ],
   apologyLines: [
-    'Dear Priyal, CEO of Romance Novels, Supreme Keeper of Plot Twists,',
+    { cls: 'salutation', text: 'To Priyal, First of Her Name, Queen of Romance Novels, Khaleesi of the Great Bookshelf, Mother of Plot Twists, Breaker of Reading Slumps, and Rightful Heir to the Iron Throne of Unread TBR Piles —' },
     'I did a terrible, terrible thing.',
     'You were telling me about your books — your favorite thing in the entire universe —',
-    'and I said the worst four words in human history:',
+    'and I said the four worst words ever spoken in this world or in Westeros:',
     '"we\'ll talk about it later." 🤦',
+    'Honestly? That was worse than the Red Wedding. At least the Freys sent an invitation first.',
     'There is no later. There is only NOW when it comes to book talk. I understand that… now.',
-    'You unfollowed me on Instagram. Honestly? Fair. I would have unfollowed me too.',
-    'And you\'ve been ignoring me since — wow, being ignored really does hurt. Lesson received, professor. Full marks to you.',
-    'So here is my official offer: unlimited, uninterrupted book rants. Every plot twist. Every love triangle. Every enemies-to-lovers arc. I am ALL ears.',
-    'I\'m so, so sorry. Truly. Now press the button, I have one very important question… 🥺'
+    'You unfollowed me on Instagram. Cold. Silent. Ruthless. Very Cersei of you — and completely deserved. I\'d have unfollowed me too. 🍷',
+    'Then came the silence. And I learned that the night is dark and full of terrors, but nothing is more terrifying than a best friend who stops replying. 🔥',
+    'So I am ready for the walk of atonement. Shame. Shame. Shame. 🔔 (Please — not the bell. Anything but the bell.)',
+    'And I swear this oath before the Old Gods, the New, and your entire bookshelf:',
+    { cls: 'oath', text: '"Book talk begins now. My phone shall end. I shall interrupt no rant, check no notification, and utter no ‘later\'. I am the shield that guards your plot twists. I pledge my life and honour to your Book Watch, for this night and all the nights to come."' },
+    'A Lannister always pays his debts — and I owe you roughly 400 hours of uninterrupted book rants. Every plot twist. Every love triangle. Every enemies-to-lovers arc. I am ALL ears.',
+    'Ignoring you was my Season 8: rushed, badly written, universally hated, and it ruined everything that came before it. Let me give you the ending you actually deserved. 🐉',
+    'I\'m so, so sorry. Truly. Now press the button — and picture me bending the knee. 🥺'
   ],
-  noLabels: ['No', 'no…?', 'still unfollowed 😤', 'hmm…', 'maybe', 'ugh, FINE'],
+  noLabels: ['No', 'no…?', 'still unfollowed 😤', 'bend the knee first ⚔️', 'maybe', 'ugh, FINE'],
   bookEmojis: ['📕', '📗', '📘', '📙', '📖', '💌']
 };
 
@@ -491,12 +518,22 @@ function showApology() {
   letter.innerHTML = '';
   CONFIG.apologyLines.forEach((line) => {
     const p = document.createElement('p');
-    p.textContent = line;
+    p.textContent = typeof line === 'string' ? line : line.text;
+    if (typeof line !== 'string' && line.cls) p.className = line.cls;
     letter.appendChild(p);
   });
   const ps = letter.querySelectorAll('p');
-  ps.forEach((p, i) => setTimeout(() => p.classList.add('visible'), 400 + i * 850));
-  setTimeout(() => $('btnQuestion').classList.add('ready'), 400 + ps.length * 850);
+  const STEP = 750;
+  // reveal line by line, keeping the newest line in view on small screens
+  ps.forEach((p, i) => setTimeout(() => {
+    p.classList.add('visible');
+    p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 400 + i * STEP));
+  setTimeout(() => {
+    const b = $('btnQuestion');
+    b.classList.add('ready');
+    b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 600 + ps.length * STEP);
 }
 $('btnQuestion').addEventListener('click', () => showScreen('screen-forgive'));
 
@@ -516,9 +553,9 @@ function dodge() {
     'nice try 😌',
     'the button is faster than your excuses',
     'it read the apology, it\'s wavering…',
-    'even the button forgives me',
+    'the button has taken the black ⚔️',
     'resistance level: crumbling 📉',
-    'ok it gives up'
+    'ok, it bends the knee 🙇'
   ][Math.min(dodges - 1, 5)];
 
   // YES grows every dodge
